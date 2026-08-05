@@ -1,0 +1,24 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.subjectcutout'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.subjectcutout"
+  defaultConfig {
+    minSdkVersion 24
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // Subject segmentation ships as a downloadable module, so the first call on a
+  // device may block while Play services fetches the model.
+  implementation "com.google.mlkit:subject-segmentation:16.0.0-beta1"
+  // Photos from the camera carry an orientation tag rather than rotated pixels.
+  implementation "androidx.exifinterface:exifinterface:1.4.1"
+}
