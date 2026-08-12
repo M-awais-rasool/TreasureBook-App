@@ -1,39 +1,37 @@
 import { Platform } from 'react-native';
 
 export const fonts = {
-  /** Loose, childlike handwriting — headings and labels written on the page. */
+  display: Platform.select({
+    ios: 'Avenir Next Rounded',
+    android: 'sans-serif-medium',
+    default: 'System',
+  }),
+
+  ui: Platform.select({
+    ios: 'Avenir Next',
+    android: 'sans-serif',
+    default: 'System',
+  }),
+
   hand: Platform.select({
     ios: 'Bradley Hand',
     android: 'casual',
     default: 'System',
   }),
-
-  /** Rounder and friendlier — used where handwriting would hurt legibility. */
-  friendly: Platform.select({
-    ios: 'Chalkboard SE',
-    android: 'casual',
-    default: 'System',
-  }),
-
-  /** Printed-in-the-book feel for captions and dates. */
-  press: Platform.select({
-    ios: 'American Typewriter',
-    android: 'serif',
-    default: 'System',
-  }),
-
-  /** UI chrome outside the notebook. */
-  ui: Platform.select({
-    ios: 'System',
-    android: 'sans-serif-medium',
-    default: 'System',
-  }),
 } as const;
 
 export const text = {
-  bookTitle: { fontFamily: fonts.hand, fontSize: 34, letterSpacing: 0.4 },
-  pageTitle: { fontFamily: fonts.hand, fontSize: 21, letterSpacing: 0.3 },
-  caption: { fontFamily: fonts.press, fontSize: 11, letterSpacing: 0.6 },
-  note: { fontFamily: fonts.friendly, fontSize: 13, letterSpacing: 0.2 },
+  appTitle: { fontFamily: fonts.display, fontSize: 23, fontWeight: '600' as const },
+  hint: { fontFamily: fonts.ui, fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.22 },
+  button: { fontFamily: fonts.ui, fontSize: 16, fontWeight: '700' as const },
+  bookTitle: { fontFamily: fonts.display, fontSize: 21, fontWeight: '700' as const, lineHeight: 22 },
+  eyebrow: { fontFamily: fonts.ui, fontSize: 7, fontWeight: '700' as const, letterSpacing: 1.26 },
+  pageTitle: { fontFamily: fonts.display, fontSize: 11, fontWeight: '600' as const },
+  pageNumber: { fontFamily: fonts.ui, fontSize: 9, fontWeight: '700' as const },
+  note: { fontFamily: fonts.ui, fontSize: 8, fontWeight: '400' as const, lineHeight: 11.6 },
+  caption: { fontFamily: fonts.hand, fontSize: 14, fontWeight: '600' as const },
+  endpaper: { fontFamily: fonts.hand, fontSize: 13, fontWeight: '600' as const },
+  cameraCaption: { fontFamily: fonts.ui, fontSize: 13, fontWeight: '700' as const },
+  cameraTitle: { fontFamily: fonts.display, fontSize: 17, fontWeight: '600' as const },
   control: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' as const, letterSpacing: 0.2 },
 } as const;

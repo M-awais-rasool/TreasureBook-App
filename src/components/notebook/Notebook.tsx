@@ -33,6 +33,8 @@ import { Cover, Endpaper } from './Boards';
 import { Page } from './Page';
 import { PageLeaf } from './PageLeaf';
 import { Spine } from './Spine';
+import { CornerProtector, CoverFrame, Ribbon } from './BookChrome';
+import { BOOK } from '../../theme/layout';
 import { StackEdge } from './StackEdge';
 import { buildSheets, spreadAt, type Sheet } from './pages';
 
@@ -59,7 +61,9 @@ function NotebookImpl(
   { metrics, stickers, hiddenStickerId, onSpreadChange, onOpened }: Props,
   ref: React.Ref<NotebookHandle>
 ) {
-  const { pageWidth, pageHeight, bookWidth, stackDepth, spineHalfWidth } = metrics;
+  const { pageWidth, pageHeight, bookWidth, bookHeight, stackDepth, spineHalfWidth } = metrics;
+  // The page block sits inside the leather cover border.
+  const blockWidth = pageWidth * 2;
 
   const sheets = useMemo(() => buildSheets(stickers), [stickers]);
   const [spread, setSpread] = useState(0);
@@ -349,11 +353,12 @@ function NotebookImpl(
   }));
 
   return (
-    <Animated.View style={[styles.book, { width: bookWidth, height: pageHeight }, bookStyle]}>
-      <View style={[styles.deskShadow, { width: bookWidth, height: pageHeight, top: pageHeight * 0.04 }]} />
+    <Animated.View style={[styles.book, { width: bookWidth, height: bookHeight }, bookStyle]}>
+      <View style={[styles.deskShadow, { width: bookWidth, height: bookHeight, top: bookHeight * 0.04 }]} />
 
-      <GestureDetector gesture={gesture}>
-        <View style={[styles.pages, { width: bookWidth, height: pageHeight }]}>
+      <CoverFrame width={bookWidth} height={bookHeight} scale={metrics.scale}>
+        <GestureDetector gesture={gesture}>
+          <View style={[styles.pages, styles.pageBlock, { width: blockWidth, height: pageHeight }]}>
           {isOpen && (
             <View style={[styles.half, { left: 0, width: pageWidth, height: pageHeight }]}>
               <StackEdge side="left" depth={stackDepth} height={pageHeight} />
@@ -415,10 +420,33 @@ function NotebookImpl(
           {!isOpen && <CoverLeaf angle={coverAngle} width={pageWidth} height={pageHeight} />}
 
           {isOpen && (
-            <Spine halfWidth={spineHalfWidth} height={pageHeight} centerX={bookWidth / 2} />
+            <Spine
+              halfWidth={spineHalfWidth}
+              height={pageHeight}
+              centerX={bookWidth / 2}
+              scale={metrics.scale}
+            />
           )}
+          </View>
+        </GestureDetector>
+
+        <View style={styles.cornerTopLeft} pointerEvents="none">
+          <CornerProtector
+            size={metrics.scale(BOOK.cornerTopLeft)}
+            corner="topLeft"
+            radius={metrics.scale(BOOK.coverRadius.tl)}
+          />
         </View>
-      </GestureDetector>
+        <View style={styles.cornerBottomRight} pointerEvents="none">
+          <CornerProtector
+            size={metrics.scale(BOOK.cornerBottomRight)}
+            corner="bottomRight"
+            radius={metrics.scale(BOOK.coverRadius.br)}
+          />
+        </View>
+      </CoverFrame>
+
+      <Ribbon scale={metrics.scale} />
     </Animated.View>
   );
 }
@@ -478,6 +506,25 @@ const styles = StyleSheet.create({
   },
   pages: {
     position: 'relative',
+  },
+  pageBlock: {
+    overflow: 'hidden',
+    borderTopLeftRadius: BOOK.pageRadius.tl,
+    borderTopRightRadius: BOOK.pageRadius.tr,
+    borderBottomRightRadius: BOOK.pageRadius.br,
+    borderBottomLeftRadius: BOOK.pageRadius.bl,
+  },
+  cornerTopLeft: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 8,
+  },
+  cornerBottomRight: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    zIndex: 8,
   },
   half: {
     position: 'absolute',

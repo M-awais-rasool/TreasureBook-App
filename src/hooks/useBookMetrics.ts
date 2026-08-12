@@ -2,31 +2,35 @@ import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BOOK, DESIGN, PAGE, createScale } from '../theme/layout';
+
 export type BookMetrics = {
-  /** Width of a single page (half the open book). */
+  /** Width of a single page (half the page block, excluding cover border). */
   pageWidth: number;
-  /** Height of a page, and of the book overall. */
+  /** Height of a page. */
   pageHeight: number;
-  /** Full open-book width — two pages plus the binding. */
+  /** Full open-book width, including the cover border. */
   bookWidth: number;
   bookHeight: number;
+  /** Leather cover border visible around the page block. */
+  coverPadding: number;
   /** Visual thickness of the paper stack peeking out at the fore-edge. */
   stackDepth: number;
-  /** Half-width of the cloth binding that straddles the centre fold. */
+  /** Half-width of the spine band that straddles the centre fold. */
   spineHalfWidth: number;
-  /** Inner padding of a page — wider on the spine side, like real margins. */
+  /** Inner padding of a page. */
   pagePadding: { outer: number; inner: number; vertical: number };
   /** Spacing between ruled lines. */
   ruleSpacing: number;
   /** True when we have room for a more generous layout. */
   isLarge: boolean;
   screen: { width: number; height: number };
-  /** Vertical offset that keeps the book optically centred above the controls. */
+  /** Vertical centre of the book — the design puts it at 45% of the screen. */
   bookCenterY: number;
+  /** Design-px → screen-px scaler. Use for every value taken from newDesign/. */
+  scale: (designPx: number) => number;
 };
 
-const PAGE_ASPECT = 0.7;
-const MIN_SIDE_MARGIN = 14;
 const LARGE_BREAKPOINT = 700;
 
 export function useBookMetrics(): BookMetrics {
@@ -35,43 +39,40 @@ export function useBookMetrics(): BookMetrics {
 
   return useMemo(() => {
     const isLarge = Math.min(width, height) >= LARGE_BREAKPOINT;
+    const scale = createScale(width, isLarge);
 
-    const chromeTop = insets.top + 64;
-    const chromeBottom = insets.bottom + (isLarge ? 168 : 148);
-    const availableHeight = Math.max(240, height - chromeTop - chromeBottom);
+    const bookWidth = scale(BOOK.width);
+    const bookHeight = scale(BOOK.height);
+    const coverPadding = scale(BOOK.coverPadding);
 
-    const sideMargin = isLarge ? 48 : MIN_SIDE_MARGIN;
-    const availableWidth = width - sideMargin * 2;
+    const blockWidth = bookWidth - coverPadding * 2;
+    const blockHeight = bookHeight - coverPadding * 2;
+    const pageWidth = blockWidth / 2;
+    const pageHeight = blockHeight;
 
-    let bookWidth = Math.min(availableWidth, isLarge ? 880 : availableWidth);
-    let pageWidth = bookWidth / 2;
-    let pageHeight = pageWidth / PAGE_ASPECT;
-
-    if (pageHeight > availableHeight) {
-      pageHeight = availableHeight;
-      pageWidth = pageHeight * PAGE_ASPECT;
-      bookWidth = pageWidth * 2;
-    }
-
-    const stackDepth = Math.max(6, Math.round(pageWidth * 0.045));
-    const spineHalfWidth = Math.max(9, Math.round(pageWidth * 0.05));
+    const designCenter = height * BOOK.centerYRatio;
+    const topLimit = insets.top + scale(DESIGN.height * 0.16) + bookHeight / 2;
+    const bottomLimit = height - insets.bottom - scale(140) - bookHeight / 2;
+    const bookCenterY = Math.min(Math.max(designCenter, topLimit), Math.max(topLimit, bottomLimit));
 
     return {
       pageWidth,
       pageHeight,
       bookWidth,
-      bookHeight: pageHeight,
-      stackDepth,
-      spineHalfWidth,
+      bookHeight,
+      coverPadding,
+      stackDepth: Math.max(4, scale(5)),
+      spineHalfWidth: scale(BOOK.spineWidth) / 2,
       pagePadding: {
-        outer: Math.round(pageWidth * 0.1),
-        inner: Math.round(pageWidth * 0.16),
-        vertical: Math.round(pageHeight * 0.075),
+        outer: scale(PAGE.paddingHorizontal),
+        inner: scale(PAGE.paddingHorizontal + PAGE.gutterWidth / 2),
+        vertical: scale(PAGE.paddingTop),
       },
-      ruleSpacing: Math.max(16, Math.round(pageHeight * 0.062)),
+      ruleSpacing: scale(PAGE.ruleSpacing),
       isLarge,
       screen: { width, height },
-      bookCenterY: chromeTop + availableHeight / 2,
+      bookCenterY,
+      scale,
     };
   }, [width, height, insets.top, insets.bottom]);
 }

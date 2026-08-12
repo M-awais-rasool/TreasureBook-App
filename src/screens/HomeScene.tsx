@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { springs } from '../theme/motion';
+import { HOME } from '../theme/layout';
 import { palette } from '../theme/palette';
 import { text } from '../theme/typography';
 import { haptics } from '../lib/haptics';
@@ -183,12 +184,18 @@ export function HomeScene() {
           style={[styles.header, { paddingTop: insets.top + 10 }]}
           pointerEvents="none"
         >
-          <Text style={styles.headerTitle}>Treasure Book</Text>
-          <Text style={styles.headerMeta}>
-            {stickers.length === 0
-              ? 'Tap the camera to begin'
-              : `${stickers.length} found · swipe to turn the page`}
-          </Text>
+          <View style={styles.headerTitleRow}>
+            <Text style={styles.headerStar}>✦</Text>
+            <Text style={styles.headerTitle}>Treasure Book</Text>
+            <Text style={styles.headerStar}>✦</Text>
+          </View>
+          <View style={styles.hintPill}>
+            <Text style={styles.hintPillText}>
+              {stickers.length === 0
+                ? 'Tap the camera to begin'
+                : `${stickers.length} found · swipe to turn the page`}
+            </Text>
+          </View>
         </Animated.View>
       )}
 
@@ -246,15 +253,9 @@ export function HomeScene() {
           accessibilityRole="button"
           accessibilityLabel="Open the camera to find something new"
         >
-          <View style={styles.captureGlow} />
-          <View style={styles.captureInner}>
-            <Glyph name="camera" size={30} color={palette.desk.deep} />
-          </View>
+          <Glyph name="camera" size={metrics.scale(HOME.capture.iconSize)} color={palette.white} />
+          <Text style={styles.captureLabel}>Find something</Text>
         </PressableScale>
-
-        <Animated.Text entering={FadeInDown.delay(400)} style={styles.captureHint}>
-          {nativeCutout ? 'Find something' : 'Find something · soft cutout'}
-        </Animated.Text>
       </Animated.View>
 
       <CameraOverlay
@@ -277,18 +278,32 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    gap: 3,
+    gap: HOME.header.gap,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerStar: {
+    fontSize: 12,
+    color: palette.accent.gold,
   },
   headerTitle: {
-    ...text.pageTitle,
-    fontSize: 19,
-    color: 'rgba(255, 232, 200, 0.9)',
+    ...text.appTitle,
+    color: palette.ink.primary,
   },
-  headerMeta: {
-    ...text.caption,
-    fontSize: 10,
-    color: 'rgba(255, 232, 200, 0.42)',
+  hintPill: {
+    paddingVertical: HOME.hintPill.paddingV,
+    paddingHorizontal: HOME.hintPill.paddingH,
+    borderRadius: HOME.hintPill.radius,
+    backgroundColor: 'rgba(240, 147, 122, 0.15)',
   },
+  hintPillText: {
+    ...text.hint,
+    color: palette.accent.coralDeep,
+  },
+
   bookAnchor: {
     position: 'absolute',
   },
@@ -305,38 +320,23 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     alignItems: 'center',
-    gap: 10,
   },
   captureButton: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: HOME.capture.gap,
+    paddingVertical: HOME.capture.paddingV,
+    paddingHorizontal: HOME.capture.paddingH,
+    borderRadius: HOME.capture.radius,
+    backgroundColor: palette.accent.coral,
+    shadowColor: palette.accent.coralDeep,
+    shadowOpacity: 0.9,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
   },
-  captureGlow: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 38,
-    backgroundColor: palette.accent.marigold,
-    opacity: 0.22,
-    transform: [{ scale: 1.18 }],
-  },
-  captureInner: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: palette.accent.marigold,
-    shadowColor: '#000',
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 12,
-  },
-  captureHint: {
-    ...text.caption,
-    fontSize: 10,
-    color: 'rgba(255, 232, 200, 0.5)',
+  captureLabel: {
+    ...text.button,
+    color: palette.white,
   },
 });

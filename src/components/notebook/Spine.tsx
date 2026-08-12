@@ -1,26 +1,52 @@
-/**
- * The cloth binding straddling the centre fold, plus the stitching that holds
- * the sheets in. Drawn above the pages so it reads as the topmost layer of the
- * physical object.
- */
-
 import React, { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { palette } from '../../theme/palette';
+import { palette, spineGradient } from '../../theme/palette';
+import { BOOK } from '../../theme/layout';
 
 type Props = {
   halfWidth: number;
   height: number;
-  /** Centre of the book, in book-local coordinates. */
   centerX: number;
+  scale: (n: number) => number;
 };
 
-const STITCH_COUNT = 9;
+function StitchLine({
+  height,
+  scale,
+  side,
+}: {
+  height: number;
+  scale: (n: number) => number;
+  side: 'left' | 'right';
+}) {
+  const dash = scale(BOOK.stitch.dash);
+  const count = Math.max(1, Math.floor(height / (dash * 2)));
 
-function SpineImpl({ halfWidth, height, centerX }: Props) {
+  return (
+    <View
+      style={[
+        styles.stitchLine,
+        {
+          width: scale(BOOK.stitch.width),
+          top: scale(BOOK.stitch.verticalInset),
+          bottom: scale(BOOK.stitch.verticalInset),
+          [side]: scale(BOOK.stitch.inset),
+        },
+      ]}
+      pointerEvents="none"
+    >
+      {Array.from({ length: count }, (_, i) => (
+        <View key={i} style={{ height: dash, marginBottom: dash, backgroundColor: palette.binding.thread, borderRadius: scale(1) }} />
+      ))}
+    </View>
+  );
+}
+
+function SpineImpl({ halfWidth, height, centerX, scale }: Props) {
   const width = halfWidth * 2;
+  const stitchHeight = height - scale(BOOK.stitch.verticalInset) * 2;
 
   return (
     <View
@@ -28,39 +54,15 @@ function SpineImpl({ halfWidth, height, centerX }: Props) {
       pointerEvents="none"
     >
       <LinearGradient
-        colors={[
-          palette.binding.clothDark,
-          palette.binding.cloth,
-          palette.binding.clothLight,
-          palette.binding.cloth,
-          palette.binding.clothDark,
-        ]}
-        locations={[0, 0.24, 0.5, 0.76, 1]}
+        colors={[...spineGradient.colors]}
+        locations={[...spineGradient.locations]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* The deep crease where both pages disappear into the binding. */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']}
-        locations={[0, 0.5, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <View style={[styles.stitches, { paddingVertical: height * 0.06 }]}>
-        {Array.from({ length: STITCH_COUNT }, (_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.stitch,
-              { width: Math.max(1.5, halfWidth * 0.62), height: Math.max(4, height * 0.014) },
-            ]}
-          />
-        ))}
-      </View>
+      <StitchLine height={stitchHeight} scale={scale} side="left" />
+      <StitchLine height={stitchHeight} scale={scale} side="right" />
     </View>
   );
 }
@@ -70,16 +72,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     overflow: 'hidden',
+    shadowColor: 'rgba(35, 18, 4, 1)',
+    shadowOpacity: 0.6,
+    shadowRadius: 13,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
-  stitches: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-  },
-  stitch: {
-    borderRadius: 2,
-    backgroundColor: palette.binding.thread,
-    opacity: 0.5,
+  stitchLine: {
+    position: 'absolute',
+    overflow: 'hidden',
   },
 });
 
