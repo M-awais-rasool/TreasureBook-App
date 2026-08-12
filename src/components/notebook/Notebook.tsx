@@ -288,12 +288,12 @@ function NotebookImpl(
         .onEnd((event, success) => {
           'worklet';
           if (!success || isBusy.value) return;
-          const forward = event.x > bookWidth / 2;
+          const forward = event.x > blockWidth / 2;
           if (forward && !canGoForward.value) return;
           if (!forward && !canGoBack.value) return;
           runOnJS(handleTap)(forward);
         }),
-    [bookWidth, handleTap, canGoForward, canGoBack, isBusy]
+    [blockWidth, handleTap, canGoForward, canGoBack, isBusy]
   );
 
   const gesture = useMemo(() => Gesture.Exclusive(pan, tap), [pan, tap]);
@@ -359,6 +359,10 @@ function NotebookImpl(
       <CoverFrame width={bookWidth} height={bookHeight} scale={metrics.scale}>
         <GestureDetector gesture={gesture}>
           <View style={[styles.pages, styles.pageBlock, { width: blockWidth, height: pageHeight }]}>
+            <View
+              style={[styles.pageClip, { width: blockWidth, height: pageHeight }]}
+              pointerEvents="box-none"
+            >
           {isOpen && (
             <View style={[styles.half, { left: 0, width: pageWidth, height: pageHeight }]}>
               <StackEdge side="left" depth={stackDepth} height={pageHeight} />
@@ -405,7 +409,8 @@ function NotebookImpl(
                 style={StyleSheet.absoluteFill}
               />
             </Animated.View>
-          </View>
+            </View>
+            </View>
 
           {turning && sheets[turning.sheetIndex] && (
             <PageLeaf
@@ -508,6 +513,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   pageBlock: {
+  },
+  pageClip: {
     overflow: 'hidden',
     borderTopLeftRadius: BOOK.pageRadius.tl,
     borderTopRightRadius: BOOK.pageRadius.tr,

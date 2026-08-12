@@ -42,17 +42,22 @@ function PageLeafImpl({ sheet, angle, metrics, hiddenStickerId, totalCollected }
   const leafStyle = useAnimatedStyle(() => {
     const a = angle.value;
     const abs = Math.abs(a);
-    // Paper bows as it lifts. A hair of vertical scale and a touch of tilt read
-    // as the sheet flexing rather than being a rigid plane.
     const bow = Math.sin((abs / 180) * Math.PI);
     return {
       transform: [
         { perspective: PERSPECTIVE },
         { rotateY: `${a}deg` },
-        { rotateZ: `${bow * -0.9}deg` },
-        { scaleY: 1 + bow * 0.012 },
+        { rotateZ: `${bow * -3.2}deg` },
+        { rotateX: `${bow * 5}deg` },
+        { scaleX: 1 - bow * 0.05 },
+        { scaleY: 1 + bow * 0.035 },
       ],
     };
+  });
+
+  const curl = useAnimatedStyle(() => {
+    const bow = Math.sin((Math.abs(angle.value) / 180) * Math.PI);
+    return { opacity: bow * 0.55 };
   });
 
   const frontFace = useAnimatedStyle(() => ({
@@ -127,6 +132,21 @@ function PageLeafImpl({ sheet, angle, metrics, hiddenStickerId, totalCollected }
             style={StyleSheet.absoluteFill}
           />
         </Animated.View>
+      </Animated.View>
+
+      <Animated.View style={[StyleSheet.absoluteFill, curl]} pointerEvents="none">
+        <LinearGradient
+          colors={[
+            'rgba(40, 24, 12, 0.42)',
+            'rgba(40, 24, 12, 0.06)',
+            'rgba(255, 248, 232, 0.20)',
+            'rgba(40, 24, 12, 0.16)',
+          ]}
+          locations={[0, 0.28, 0.62, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
       </Animated.View>
 
       {/* Sheen sits above both faces so it travels across whichever is showing. */}
