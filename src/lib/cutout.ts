@@ -26,15 +26,20 @@ export class NoSubjectFoundError extends Error {
 const CUTOUT_DIR = 'cutouts';
 
 function cutoutDirectory(): Directory {
-  const dir = new Directory(Paths.document, CUTOUT_DIR);
+  const dir = new Directory(Paths.cache, CUTOUT_DIR);
   if (!dir.exists) {
     dir.create({ intermediates: true });
   }
   return dir;
 }
 
-export function canExtractSubjects(): boolean {
-  return isSubjectCutoutAvailable();
+export function purgeCutouts(): void {
+  try {
+    const dir = new Directory(Paths.cache, CUTOUT_DIR);
+    if (dir.exists) dir.delete();
+  } catch (error) {
+    if (__DEV__) console.warn('[cutout] could not purge previous cut-outs:', error);
+  }
 }
 
 export async function makeCutout(photoUri: string): Promise<Cutout> {

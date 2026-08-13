@@ -9,12 +9,6 @@ export const springs = {
     overshootClamping: false,
   } satisfies WithSpringConfig,
 
-  pageTurn: {
-    damping: 20,
-    stiffness: 95,
-    mass: 1.25,
-  } satisfies WithSpringConfig,
-
   control: {
     damping: 16,
     stiffness: 320,

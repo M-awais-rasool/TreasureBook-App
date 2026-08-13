@@ -4,7 +4,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn,
-  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -17,17 +16,18 @@ import { palette } from '../theme/palette';
 import { text } from '../theme/typography';
 import { haptics } from '../lib/haptics';
 import { captureLayout } from '../lib/captureLayout';
-import { canExtractSubjects, type Cutout } from '../lib/cutout';
+import { type Cutout } from '../lib/cutout';
 import { useBookMetrics } from '../hooks/useBookMetrics';
 import {
-  SLOTS_PER_PAGE,
+  BOOK_CAPACITY,
   createPlacement,
+  selectIsFull,
   useCollectionStore,
   type Placement,
 } from '../state/collectionStore';
 import { Desk } from '../components/Desk';
-import { Notebook, type NotebookHandle } from '../components/notebook/Notebook';
-import { buildSheets, locatePage } from '../components/notebook/pages';
+import { Notebook } from '../components/notebook/Notebook';
+import { slotAt } from '../components/notebook/pages';
 import { fitInSlot, slotRects } from '../components/notebook/pageLayout';
 import { StickerFlight, type FlightPoint } from '../components/StickerFlight';
 import { Glyph } from '../components/ui/Glyph';
@@ -46,16 +46,19 @@ type Flight = {
 
 type Burst = { id: number; x: number; y: number; size: number };
 
+/** How long the landed sticker stays in the overlay before the page takes over. */
+const HANDOFF_MS = 160;
+const BURST_MS = 1100;
+
 export function HomeScene() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const metrics = useBookMetrics();
 
   const stickers = useCollectionStore((s) => s.stickers);
-  const hydrate = useCollectionStore((s) => s.hydrate);
+  const isFull = useCollectionStore(selectIsFull);
   const addSticker = useCollectionStore((s) => s.addSticker);
 
-  const notebookRef = useRef<NotebookHandle>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
   const [flight, setFlight] = useState<Flight | null>(null);
@@ -67,10 +70,6 @@ export function HomeScene() {
   const controls = useSharedValue(0);
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
-
-  useEffect(() => {
     if (!bookOpen) return;
     controls.value = withDelay(160, withSpring(1, springs.sheet));
   }, [bookOpen, controls]);
@@ -80,40 +79,30 @@ export function HomeScene() {
     [width, height, insets.top, insets.bottom]
   );
 
-  const bookLeft = (width - metrics.bookWidth) / 2;
-  const bookTop = metrics.bookCenterY - metrics.pageHeight / 2;
+  const blockLeft = (width - metrics.bookWidth) / 2 + metrics.coverPadding;
+  const blockTop = metrics.bookCenterY - metrics.pageHeight / 2 + metrics.coverPadding;
 
   const resolveDestination = useCallback(
     (cutout: Cutout, placement: Placement) => {
-      const index = stickers.length;
-      const pageIndex = Math.floor(index / SLOTS_PER_PAGE);
-      const slotIndex = index % SLOTS_PER_PAGE;
-
-      const sheets = buildSheets(stickers);
-      const { spreadIndex, side } = locatePage(sheets, pageIndex);
+      const { side, slotIndex } = slotAt(stickers.length);
       const slot = slotRects(metrics, side)[slotIndex];
       const size = fitInSlot(slot, cutout.width, cutout.height);
-
-      const pageOriginX = bookLeft + (side === 'right' ? metrics.pageWidth : 0);
+      const pageOriginX = blockLeft + (side === 'right' ? metrics.pageWidth : 0);
 
       return {
-        spreadIndex,
-        to: {
-          cx: pageOriginX + slot.x + slot.width / 2 + slot.width * placement.drift.x,
-          cy: bookTop + slot.y + slot.height / 2 + slot.height * placement.drift.y,
-          width: size.width * placement.scale,
-          height: size.height * placement.scale,
-          rotation: placement.rotation,
-        },
+        cx: pageOriginX + slot.x + slot.width / 2 + slot.width * placement.drift.x,
+        cy: blockTop + slot.y + slot.height / 2 + slot.height * placement.drift.y,
+        width: size.width * placement.scale,
+        height: size.height * placement.scale,
+        rotation: placement.rotation,
       };
     },
-    [stickers, metrics, bookLeft, bookTop]
+    [stickers.length, metrics, blockLeft, blockTop]
   );
 
   const handleCaptured = useCallback(
-    async (cutout: Cutout) => {
+    (cutout: Cutout) => {
       const placement = createPlacement();
-      const { spreadIndex, to } = resolveDestination(cutout, placement);
 
       setFlight({
         cutout,
@@ -124,17 +113,22 @@ export function HomeScene() {
           width: layout.preview.width,
           height: layout.preview.height,
         },
-        to,
+        to: resolveDestination(cutout, placement),
         flying: false,
         landedId: null,
       });
       setCameraOpen(false);
-
-      await notebookRef.current?.goToSpread(spreadIndex);
-      setFlight((current) => (current ? { ...current, flying: true } : current));
     },
     [resolveDestination, layout.preview]
   );
+
+  useEffect(() => {
+    if (!flight || flight.flying) return;
+    const frame = requestAnimationFrame(() => {
+      setFlight((current) => (current && !current.flying ? { ...current, flying: true } : current));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [flight]);
 
   const handleLanded = useCallback(() => {
     const current = flightRef.current;
@@ -148,6 +142,11 @@ export function HomeScene() {
       placement: current.placement,
     });
 
+    if (!sticker) {
+      setFlight(null);
+      return;
+    }
+
     setFlight({ ...current, landedId: sticker.id });
     setBurst({
       id: Date.now(),
@@ -157,12 +156,12 @@ export function HomeScene() {
     });
     haptics.stamp();
 
-    setTimeout(() => setFlight(null), 160);
+    setTimeout(() => setFlight(null), HANDOFF_MS);
   }, [addSticker]);
 
   useEffect(() => {
     if (!burst) return;
-    const timer = setTimeout(() => setBurst(null), 1100);
+    const timer = setTimeout(() => setBurst(null), BURST_MS);
     return () => clearTimeout(timer);
   }, [burst]);
 
@@ -171,7 +170,12 @@ export function HomeScene() {
     transform: [{ translateY: (1 - controls.value) * 34 }],
   }));
 
-  const nativeCutout = useMemo(() => canExtractSubjects(), []);
+  const hint =
+    stickers.length === 0
+      ? 'Tap the camera to begin'
+      : isFull
+        ? `All ${BOOK_CAPACITY} found — your book is full!`
+        : `${stickers.length} of ${BOOK_CAPACITY} found`;
 
   return (
     <View style={styles.root}>
@@ -190,11 +194,7 @@ export function HomeScene() {
             <Text style={styles.headerStar}>✦</Text>
           </View>
           <View style={styles.hintPill}>
-            <Text style={styles.hintPillText}>
-              {stickers.length === 0
-                ? 'Tap the camera to begin'
-                : `${stickers.length} found · swipe to turn the page`}
-            </Text>
+            <Text style={styles.hintPillText}>{hint}</Text>
           </View>
         </Animated.View>
       )}
@@ -203,15 +203,14 @@ export function HomeScene() {
         style={[
           styles.bookAnchor,
           {
-            left: bookLeft,
-            top: bookTop,
+            left: (width - metrics.bookWidth) / 2,
+            top: metrics.bookCenterY - metrics.pageHeight / 2,
             width: metrics.bookWidth,
             height: metrics.pageHeight,
           },
         ]}
       >
         <Notebook
-          ref={notebookRef}
           metrics={metrics}
           stickers={stickers}
           hiddenStickerId={flight?.landedId ?? null}
@@ -220,10 +219,7 @@ export function HomeScene() {
       </View>
 
       {burst && (
-        <View
-          style={[styles.sparkAnchor, { left: burst.x, top: burst.y }]}
-          pointerEvents="none"
-        >
+        <View style={[styles.sparkAnchor, { left: burst.x, top: burst.y }]} pointerEvents="none">
           <Sparkles trigger={burst.id} size={burst.size} />
         </View>
       )}
@@ -247,14 +243,16 @@ export function HomeScene() {
             haptics.tap();
             setCameraOpen(true);
           }}
-          disabled={!!flight}
+          disabled={!!flight || isFull}
           depth={0.08}
           style={styles.captureButton}
           accessibilityRole="button"
-          accessibilityLabel="Open the camera to find something new"
+          accessibilityLabel={
+            isFull ? 'The book is full' : 'Open the camera to find something new'
+          }
         >
           <Glyph name="camera" size={metrics.scale(HOME.capture.iconSize)} color={palette.white} />
-          <Text style={styles.captureLabel}>Find something</Text>
+          <Text style={styles.captureLabel}>{isFull ? 'Book is full' : 'Find something'}</Text>
         </PressableScale>
       </Animated.View>
 
