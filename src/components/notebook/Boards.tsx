@@ -1,11 +1,3 @@
-/**
- * The cover boards.
- *
- * `Cover` is the front of the closed notebook — the first thing the child sees
- * and the surface that swings open on launch. `Endpaper` is what is glued to
- * the inside of a board, visible on whichever side has no page.
- */
-
 import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,8 +9,6 @@ type BoardProps = {
   width: number;
   height: number;
 };
-
-// MARK: - Front cover
 
 function CoverImpl({ width, height }: BoardProps) {
   const labelWidth = width * 0.66;
@@ -65,38 +55,6 @@ function CoverImpl({ width, height }: BoardProps) {
   );
 }
 
-// MARK: - Inside of a board
-
-function EndpaperImpl({ width, height, side }: BoardProps & { side: 'left' | 'right' }) {
-  const spineIsLeft = side === 'right';
-
-  return (
-    <View style={[styles.board, { width, height }]}>
-      <LinearGradient
-        colors={['#7A5236', '#5F3D28', '#4A2E1E']}
-        locations={[0, 0.5, 1]}
-        start={{ x: spineIsLeft ? 0 : 1, y: 0 }}
-        end={{ x: spineIsLeft ? 1 : 0, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-
-      {/* Deep shadow in the gutter. */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0.62)', 'rgba(0,0,0,0)']}
-        start={{ x: spineIsLeft ? 0 : 1, y: 0 }}
-        end={{ x: spineIsLeft ? 0.35 : 0.65, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <View style={styles.endpaperNote}>
-        <Text style={styles.endpaperText}>
-          {side === 'left' ? 'If found, please return\nto its owner.' : 'The end — for now.'}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   board: {
     overflow: 'hidden',
@@ -138,19 +96,6 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     backgroundColor: 'rgba(59, 44, 36, 0.2)',
   },
-  endpaperNote: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  endpaperText: {
-    ...text.caption,
-    color: 'rgba(255, 236, 208, 0.32)',
-    textAlign: 'center',
-    lineHeight: 17,
-  },
 });
 
 export const Cover = memo(CoverImpl);
-export const Endpaper = memo(EndpaperImpl);

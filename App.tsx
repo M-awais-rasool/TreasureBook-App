@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 
 import { palette } from './src/theme/palette';
+import { purgeCutouts } from './src/lib/cutout';
 import { HomeScene } from './src/screens/HomeScene';
 
 // Hold the splash until the first frame is ready, so the book's opening
@@ -17,6 +18,7 @@ export default function App() {
 
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync(palette.desk.deep);
+    purgeCutouts();
     setReady(true);
   }, []);
 

@@ -63,16 +63,15 @@ App.tsx                       providers, splash handoff
 └── screens/HomeScene         the single scene; owns the capture sequence
     ├── components/Desk       Skia backdrop: lamp pool, grain, vignette
     ├── components/notebook/  the book
-    │   ├── Notebook          composition, gestures, page-turn state machine
-    │   ├── PageLeaf          a sheet caught mid-turn (both faces + shading)
+    │   ├── Notebook          composition + the one-time opening ceremony
     │   ├── Page              paper + content for one page
     │   ├── PaperTexture      Skia: stock, gutter, ageing, ruling, fibre grain
-    │   ├── Boards            front cover and endpapers
+    │   ├── Boards            the front cover board
     │   ├── Spine / StackEdge cloth binding and the fore-edge of the stack
-    │   └── pages.ts          flat sticker list → sheets → spreads
+    │   └── pages.ts          flat sticker list → the two pages
     ├── screens/CameraOverlay  capture, processing, and the finished cutout
     ├── components/StickerFlight  the arc from viewfinder to page
-    └── state/collectionStore  zustand + a JSON manifest on disk
+    └── state/collectionStore  zustand, in memory only
 
 src/lib/
 ├── cutout.ts             native extraction + the Skia soft fallback
@@ -82,17 +81,23 @@ src/lib/
 modules/subject-cutout/       local Expo module — the background remover
 ```
 
-### The page turn
+### The book is two pages
 
-One shared value, `angle`, running from `0` to `-180` degrees. The pan gesture
-writes to it directly and a spring finishes the job, which means catching a page
-mid-flight needs no special handling — the gesture and the animation are the
-same number.
+There is no page turning. The book is one fixed spread — a left page and a right
+page, two sticker slots each, four in total — so `pages.ts` has nothing to model
+beyond which sticker sits in which slot, and `Notebook` has no gestures and no
+navigation state.
 
-The rotation alone does not look like paper. What sells it is the shading layered
-on top: each face darkens as it turns away from the light, a sheen sweeps across
-as the sheet passes vertical, and the sheet casts a moving shadow onto the page
-it is uncovering and then onto the one it lands on.
+The one piece of 3D left is the launch ceremony: `coverAngle` runs `0` → `-180`
+once, swinging the front cover open. The leaf carries the **left page** on its
+back face, so when the swing finishes and the leaf unmounts, what is underneath
+is already identical and the handoff is invisible.
+
+### Nothing is saved
+
+Closing the app empties the book. The store is plain in-memory zustand with no
+disk manifest, and the cut-out PNGs are written to the **cache** directory —
+`purgeCutouts()` runs at launch and clears whatever the last run left behind.
 
 ### Where the realism comes from
 
@@ -191,7 +196,7 @@ If you reintroduce a 3D transform on a large container, check it against a
 stale native frames behind after a layout change, which makes this class of bug
 very easy to misattribute.
 
-The page turn's own `rotateY` is unaffected — that is a leaf-level transform
+The cover leaf's own `rotateY` is unaffected — that is a leaf-level transform
 and works exactly as intended.
 
 ## Known limitations
@@ -212,9 +217,11 @@ and works exactly as intended.
 
 On an iPhone 17 Pro simulator (iOS 26.2), by cold launch: the book's opening
 animation, the notebook at correct size with paper grain, ruling and binding,
-tap-to-turn between spreads, the camera overlay and permission flow, capture →
-cutout → page navigation → flight → landing, multi-sticker slot placement, and
-persistence to disk. TypeScript is clean.
+the camera overlay and permission flow, capture → cutout → flight → landing, and
+multi-sticker slot placement.
+
+The two-page rewrite (no page turning, no persistence) is verified by
+`npm run typecheck` only — it has not been re-run on a device.
 
 ## Stack
 
