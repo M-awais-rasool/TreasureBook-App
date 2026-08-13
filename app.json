@@ -8,7 +8,7 @@
     "scheme": "treasurebook",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "backgroundColor": "#1B1210",
+    "backgroundColor": "#211D18",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.treasurebook.app",
@@ -19,7 +19,7 @@
     "android": {
       "package": "com.treasurebook.app",
       "adaptiveIcon": {
-        "backgroundColor": "#1B1210",
+        "backgroundColor": "#F5B183",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -44,9 +44,9 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 180,
+          "imageWidth": 420,
           "resizeMode": "contain",
-          "backgroundColor": "#1B1210"
+          "backgroundColor": "#F7DEB8"
         }
       ]
     ]
