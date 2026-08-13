@@ -74,7 +74,7 @@ App.tsx                       providers, splash handoff
     └── state/collectionStore  zustand, in memory only
 
 src/lib/
-├── cutout.ts             native extraction + the Skia soft fallback
+├── cutout.ts             native extraction — the only path, no fallback
 ├── captureLayout.ts      geometry the overlay and the flight both read
 └── devSamplePhoto.ts     __DEV__ stand-in photo + blank-frame detection
 
@@ -156,17 +156,17 @@ the pipeline is ours end to end:
    with scissors
 4. Composite against transparency, crop tight to the subject, write a PNG
 
-### The fallback
+### There is no fallback
 
-Vision's subject lifting needs a Neural Engine, so it does not work on the iOS
-Simulator, and the native module does not exist at all in Expo Go. Rather than
-dead-ending at the capture screen, `lib/cutout.ts` falls back to a Skia pass that
-feathers the centre of the frame into transparency.
+`lib/cutout.ts` has exactly one path: the native module. If it is unavailable
+(Expo Go, a stale native build) or finds no subject, `makeCutout` throws and the
+capture screen shows the reason.
 
-This is **not** segmentation and is not presented as such — the capture button's
-label reads "soft cutout" when the fallback is active. It exists so the rest of
-the experience stays explorable while developing. **Use a physical device to see
-real background removal.**
+An earlier version fell back to a Skia pass that feathered the centre of the
+frame into transparency. That was removed: it is not segmentation, and returning
+a blurred circle made every real failure look like a bad matte instead of a
+failure. **A physical device is now required to capture anything** — Vision's
+subject lifting needs a Neural Engine, so the iOS Simulator will fail here.
 
 ### Developing on a simulator
 
@@ -207,8 +207,8 @@ and works exactly as intended.
   `subject-segmentation:16.0.0-beta1`; check for a newer release when you first
   build it.
 - **Background removal itself is unverified.** Vision's subject lifting needs a
-  real device, so on the simulator every capture goes through the soft-cutout
-  fallback. The Swift module compiles and links, but the quality of its mattes
+  real device, and with the soft fallback gone, capture now simply fails on the
+  simulator. The Swift module compiles and links, but the quality of its mattes
   has not been observed — try it on a device first.
 - ML Kit downloads its segmentation model on first use, so the very first
   capture on a fresh Android install may pause while that happens.

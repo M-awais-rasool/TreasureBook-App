@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { deleteCutoutFile, type CutoutMode } from '../lib/cutout';
+import { deleteCutoutFile } from '../lib/cutout';
 
 export const PAGES_PER_SPREAD = 2;
 export const SLOTS_PER_PAGE = 2;
@@ -11,7 +11,6 @@ export type Sticker = {
   uri: string;
   width: number;
   height: number;
-  mode: CutoutMode;
   createdAt: number;
   rotation: number;
   scale: number;
@@ -28,7 +27,6 @@ export type NewSticker = {
   uri: string;
   width: number;
   height: number;
-  mode: CutoutMode;
   placement?: Placement;
 };
 
@@ -52,7 +50,7 @@ export function createPlacement(): Placement {
 export const useCollectionStore = create<CollectionState>((set, get) => ({
   stickers: [],
 
-  addSticker: ({ uri, width, height, mode, placement }) => {
+  addSticker: ({ uri, width, height, placement }) => {
     const current = get().stickers;
     if (current.length >= BOOK_CAPACITY) return null;
 
@@ -62,7 +60,6 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
       uri,
       width,
       height,
-      mode,
       createdAt: Date.now(),
       rotation,
       scale,

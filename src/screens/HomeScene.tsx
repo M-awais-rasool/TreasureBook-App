@@ -138,7 +138,6 @@ export function HomeScene() {
       uri: current.cutout.uri,
       width: current.cutout.width,
       height: current.cutout.height,
-      mode: current.cutout.mode,
       placement: current.placement,
     });
 
